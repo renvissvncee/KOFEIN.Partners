@@ -1,5 +1,5 @@
 import { useState, useEffect } from "react";
-import { Plus, Trash2, Edit2, Clock, Coffee, Package, Settings, Check, X, Users } from "lucide-react";
+import { Plus, Trash2, Edit2, Clock, Coffee, Package, Settings, Check, X, Users, TrendingUp } from "lucide-react";
 
 const API_URL = import.meta.env.VITE_API_URL ?? "http://localhost:3001";
 
@@ -12,9 +12,11 @@ function OwnerPanel({ coffeeShopId }) {
   const [loading, setLoading] = useState(false);
   const [ordersLoading, setOrdersLoading] = useState(false);
   const [staffLoading, setStaffLoading] = useState(false);
+  const [statsLoading, setStatsLoading] = useState(false);
   const [error, setError] = useState(null);
   const [coffeeShop, setCoffeeShop] = useState(null);
   const [newStaffId, setNewStaffId] = useState('');
+  const [dailyStats, setDailyStats] = useState({ totalOrders: 0, totalRevenue: 0 });
 
   async function loadCoffeeShop() {
     try {
@@ -35,7 +37,12 @@ function OwnerPanel({ coffeeShopId }) {
       const response = await fetch(`${API_URL}/coffee-shops/${coffeeShopId}`, {
         method: 'PUT',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ name: coffeeShop.name, address: coffeeShop.address })
+        body: JSON.stringify({
+          name: coffeeShop.name, 
+          address: coffeeShop.address,
+          opening_time: coffeeShop.opening_time,
+          closing_time: coffeeShop.closing_time
+        })
       });
       if (!response.ok) throw new Error('Failed to save coffee shop');
       const updated = await response.json();
@@ -94,6 +101,23 @@ function OwnerPanel({ coffeeShopId }) {
     }
   }
 
+  async function loadDailyStats() {
+    try {
+      setStatsLoading(true);
+      const token = localStorage.getItem('authToken');
+      const response = await fetch(`${API_URL}/api/stats/daily?coffee_shop_id=${coffeeShopId}`, {
+        headers: { 'Authorization': `Bearer ${token}` }
+      });
+      if (!response.ok) throw new Error('Failed to load stats');
+      const data = await response.json();
+      setDailyStats(data);
+    } catch (err) {
+      console.error('Error loading stats:', err);
+    } finally {
+      setStatsLoading(false);
+    }
+  }
+
   async function addStaff() {
     if (!newStaffId.trim()) return;
     try {
@@ -133,10 +157,12 @@ function OwnerPanel({ coffeeShopId }) {
     loadStaff();
     loadOrders();
     loadCoffeeShop();
+    loadDailyStats();
   }, []);
   useEffect(() => { if (activeTab === "orders") loadOrders(); }, [activeTab]);
   useEffect(() => { if (activeTab === "staff") loadStaff(); }, [activeTab]);
   useEffect(() => { if (activeTab === "settings") loadCoffeeShop(); }, [activeTab]);
+  useEffect(() => { loadDailyStats(); }, [coffeeShopId]);
 
   async function addItem() {
     try {
@@ -252,6 +278,40 @@ function OwnerPanel({ coffeeShopId }) {
         <p className="text-zinc-600">
           {coffeeShop?.name || "Загрузка..."} <span className="text-zinc-500">•</span> Управление кофейней
         </p>
+      </div>
+
+      {/* Daily Stats Panel */}
+      <div className="mb-8 grid grid-cols-1 sm:grid-cols-2 gap-4">
+        <div className="glass-strong rounded-2xl p-5 border border-matcha/20">
+          <div className="flex items-center gap-3">
+            <div className="p-3 rounded-xl bg-matcha-light/20">
+              <Coffee size={24} className="text-matcha-dark" />
+            </div>
+            <div>
+              <p className="text-sm text-zinc-500 mb-1">Всего заказов за день</p>
+              {statsLoading ? (
+                <p className="text-2xl font-semibold text-[#3d4d3d] animate-pulse">-</p>
+              ) : (
+                <p className="text-2xl font-semibold text-[#3d4d3d]">{dailyStats.totalOrders}</p>
+              )}
+            </div>
+          </div>
+        </div>
+        <div className="glass-strong rounded-2xl p-5 border border-matcha/20">
+          <div className="flex items-center gap-3">
+            <div className="p-3 rounded-xl bg-matcha-dark/10">
+              <TrendingUp size={24} className="text-matcha-dark" />
+            </div>
+            <div>
+              <p className="text-sm text-zinc-500 mb-1">Выручка за день</p>
+              {statsLoading ? (
+                <p className="text-2xl font-semibold text-matcha-dark animate-pulse">-</p>
+              ) : (
+                <p className="text-2xl font-semibold text-matcha-dark">{dailyStats.totalRevenue.toLocaleString('ru-RU')} ₽</p>
+              )}
+            </div>
+          </div>
+        </div>
       </div>
 
       {/* Tab navigation — soft, matte */}
@@ -591,6 +651,26 @@ function OwnerPanel({ coffeeShopId }) {
                   className="input"
                   placeholder="Введите адрес"
                 />
+              </div>
+              <div className="grid grid-cols-2 gap-4">
+                <div>
+                  <label className="block text-sm font-medium text-zinc-600 mb-2">Время открытия</label>
+                  <input
+                    type="time"
+                    value={coffeeShop?.opening_time || "08:00"}
+                    onChange={(e) => setCoffeeShop({ ...coffeeShop, opening_time: e.target.value })}
+                    className="input"
+                  />
+                </div>
+                <div>
+                  <label className="block text-sm font-medium text-zinc-600 mb-2">Время закрытия</label>
+                  <input
+                    type="time"
+                    value={coffeeShop?.closing_time || "22:00"}
+                    onChange={(e) => setCoffeeShop({ ...coffeeShop, closing_time: e.target.value })}
+                    className="input"
+                  />
+                </div>
               </div>
               {error && <p className="p-3 rounded-xl bg-red-50/50 border border-red-200 text-red-600 text-sm">{error}</p>}
               <button
