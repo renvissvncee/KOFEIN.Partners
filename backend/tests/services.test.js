@@ -50,15 +50,14 @@ describe('Telegram Service', () => {
       const user = { id: 123, first_name: 'Test' };
       const authDate = Math.floor(Date.now() / 1000);
       
-      // Порядок ключей должен быть отсортирован по алфавиту
+      // Функция сортирует ключи, поэтому порядок в dataCheckString должен соответствовать
       const dataCheckString = `auth_date=${authDate}\nuser=${JSON.stringify(user)}`;
       const secretKey = crypto.createHmac('sha256', 'WebAppData').update(botToken).digest();
       const hash = crypto.createHmac('sha256', secretKey).update(dataCheckString).digest('hex');
       
-      // Важно: объект должен быть передан с ключами в порядке сортировки
       const parsedData = { 
-        auth_date: authDate, 
-        user, 
+        auth_date: String(authDate), 
+        user: JSON.stringify(user),
         hash 
       };
 
@@ -70,8 +69,8 @@ describe('Telegram Service', () => {
     test('должен вернуть false для неверного хэша', () => {
       const user = { id: 123, first_name: 'Test' };
       const parsedData = { 
-        auth_date: 1234567890, 
-        user, 
+        auth_date: '1234567890', 
+        user: JSON.stringify(user),
         hash: 'invalidhash' 
       };
 
@@ -83,8 +82,8 @@ describe('Telegram Service', () => {
     test('должен вернуть false если hash отсутствует', () => {
       const user = { id: 123, first_name: 'Test' };
       const parsedData = { 
-        auth_date: 1234567890, 
-        user 
+        auth_date: '1234567890', 
+        user: JSON.stringify(user)
       };
 
       const result = verifyTelegramHash(parsedData, botToken);
@@ -97,15 +96,14 @@ describe('Telegram Service', () => {
       const chat = { id: 456, type: 'private' };
       const authDate = Math.floor(Date.now() / 1000);
       
-      // Сортировка по алфавиту: auth_date, chat, user
       const dataCheckString = `auth_date=${authDate}\nchat=${JSON.stringify(chat)}\nuser=${JSON.stringify(user)}`;
       const secretKey = crypto.createHmac('sha256', 'WebAppData').update(botToken).digest();
       const hash = crypto.createHmac('sha256', secretKey).update(dataCheckString).digest('hex');
       
       const parsedData = { 
-        auth_date: authDate, 
-        chat, 
-        user, 
+        auth_date: String(authDate), 
+        chat: JSON.stringify(chat),
+        user: JSON.stringify(user),
         hash 
       };
 

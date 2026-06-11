@@ -6,6 +6,7 @@ import authRoutes from './routes/authRoutes.js';
 import ordersRoutes from './routes/ordersRoutes.js';
 import menuRoutes from './routes/menuRoutes.js';
 import coffeeShopsRoutes from './routes/coffeeShopsRoutes.js';
+import statsRoutes from './routes/statsRoutes.js';
 
 dotenv.config();
 
@@ -18,6 +19,7 @@ app.use('/api/auth', authRoutes);
 app.use('/orders', ordersRoutes);
 app.use('/menu', menuRoutes);
 app.use('/coffee-shops', coffeeShopsRoutes);
+app.use('/api/stats', statsRoutes);
 
 // Запуск сервера только если этот файл запущен напрямую
 const port = process.env.PORT || 3001;

@@ -79,6 +79,10 @@ export const login = async (req, res) => {
 };
 
 export const me = async (req, res) => {
+  if (!req.user) {
+    return res.status(401).json({ error: 'Unauthorized' });
+  }
+
   res.json({
     userId: req.user.userId,
     role: req.user.role,
